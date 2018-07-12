@@ -23,3 +23,12 @@ func (t *tracer) Trace(a ...interface{}) {
 	fmt.Fprint(t.out, a...)
 	fmt.Fprintln(t.out)
 }
+
+type nilTracer struct{}
+
+func (t *nilTracer) Trace(a ...interface{}) {}
+
+// Off 함수는 nilTracer 를 반환함
+func Off() Tracer {
+	return &nilTracer{}
+}
