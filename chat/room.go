@@ -1,6 +1,7 @@
 package main
 
 import (
+	"chatting_in_golang/trace"
 	"log"
 	"net/http"
 
@@ -8,15 +9,17 @@ import (
 )
 
 type room struct {
-	// 수신한 메시지를 보관하는 채널
+	// forward 는 수신한 메시지를 보관하는 채널이며,
 	// 해당 채팅방에 있는 클라이언트들에게 전달되어야 함
 	forward chan []byte
-	// 방에 들어오려는 클라이언트를 위한 채널
+	// join 은 방에 들어오려는 클라이언트를 위한 채널
 	join chan *client
-	// 방에서 나가려는 클라이언트를 위한 채널
+	// leave 는 방에서 나가려는 클라이언트를 위한 채널
 	leave chan *client
-	// 현재 채팅방에 있는 모든 클라이언트들
+	// clients 는 현재 채팅방에 있는 모든 클라이언트를 보유함
 	clients map[*client]bool
+	// tracer 는 방 안에서 활동 정보를 추적함
+	tracer trace.Tracer
 }
 
 func newRoom() *room {
@@ -34,13 +37,19 @@ func (r *room) run() {
 		case client := <-r.join:
 			// 입장
 			r.clients[client] = true
+			r.tracer.Trace("New client joined")
 		case client := <-r.leave:
 			// 퇴장
 			delete(r.clients, client)
 			close(client.send)
+			r.tracer.Trace("Client left")
 		case msg := <-r.forward:
+			r.tracer.Trace("Message received: ", string(msg))
+
+			// 모든 클라이언트들에게 메시지 전달
 			for client := range r.clients {
 				client.send <- msg
+				r.tracer.Trace(" -- sent to client")
 			}
 		}
 	}
