@@ -1,8 +1,51 @@
 <html>
-    <head>
-        <title>Chat with Golang</title>
-    </head>
-    <body>
-        Hello, World! (from templates)
-    </body>
+<head>
+    <title>Chat with Golang</title>
+    <style>
+        input {
+            display: block;
+        }
+        ul {
+            list-style: none;
+        }
+    </style>
+</head>
+<body>
+    <ul id="messages"></ul>
+    <form id="chatbox">
+        <textarea></textarea>
+        <input type="submit" value="Send" />
+    </form>
+    <script src="//ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
+    <script>
+        $(function() {
+            var socket = null,
+                msgBox = $('#chatbox textarea'),
+                messages = $('#messages');
+            
+            $('#chatbox').submit(function() {
+                if (!msgBox.val()) return false;
+                if (!socket) {
+                    alert('ERROR: 연결된 소켓이 없습니다');
+                    return false;
+                }
+                socket.send(msgBox.val());
+                msgBox.val("");
+                return false;
+            });
+
+            if (!window["WebSocket"]) {
+                alert("ERROR: 브라우저가 웹소켓을 지원하지 않습니다");
+            } else {
+                socket = new WebSocket("ws://localhost:8080/room");
+                socket.onclose = function() {
+                    alert('소켓 연결이 종료되었습니다');
+                }
+                socket.onmessage = function(e) {
+                    messages.append($('<li>').text(e.data))
+                }
+            }
+        });
+    </script>
+</body>
 </html>
