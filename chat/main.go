@@ -1,10 +1,12 @@
 package main
 
 import (
+	"chatting_in_golang/trace"
 	"flag"
 	"html/template"
 	"log"
 	"net/http"
+	"os"
 	"path/filepath"
 	"sync"
 )
@@ -27,8 +29,13 @@ func main() {
 	flag.Parse() // 플래그 파싱
 
 	r := newRoom()
-	http.Handle("/", &templateHandler{filename: "chat.html"})
+	r.tracer = trace.New(os.Stdout)
+	http.Handle("/", MustAuth(&templateHandler{filename: "chat.html"}))
+	http.Handle("/login", &templateHandler{filename: "login.html"})
 	http.Handle("/room", r)
+
+	// CSS
+	http.Handle("/assets/", http.StripPrefix("/assets", http.FileServer(http.Dir("/assets/"))))
 
 	// 채팅방 시작
 	go r.run()
