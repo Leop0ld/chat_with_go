@@ -5,7 +5,14 @@ settings:
 schema:
 - name: chat
   path: .
-  commands: {}
+  commands:
+    build:
+        status: false
+        method: go build
+        args:
+        - -o
+    run:
+        status: true
   watcher:
     extensions:
     - go
