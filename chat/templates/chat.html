@@ -30,7 +30,7 @@
                     alert('ERROR: 연결된 소켓이 없습니다');
                     return false;
                 }
-                socket.send(msgBox.val());
+                socket.send(JSON.stringify({"Message": msgBox.val()}));
                 msgBox.val("");
                 return false;
             });
@@ -43,7 +43,14 @@
                     alert('소켓 연결이 종료되었습니다');
                 }
                 socket.onmessage = function(e) {
-                    messages.append($('<li>').text(e.data))
+                    var msg = JSON.parse(e.data);
+
+                    messages.append(
+                        $('<li>').append(
+                            $('<strong>').text(msg.Name + ": "),
+                            $('<span>').text(msg.Message)
+                        )
+                    );
                 }
             }
         });

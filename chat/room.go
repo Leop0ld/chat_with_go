@@ -5,13 +5,15 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/stretchr/objx"
+
 	"github.com/gorilla/websocket"
 )
 
 type room struct {
 	// forward 는 수신한 메시지를 보관하는 채널이며,
 	// 해당 채팅방에 있는 클라이언트들에게 전달되어야 함
-	forward chan []byte
+	forward chan *message
 	// join 은 방에 들어오려는 클라이언트를 위한 채널
 	join chan *client
 	// leave 는 방에서 나가려는 클라이언트를 위한 채널
@@ -24,7 +26,7 @@ type room struct {
 
 func newRoom() *room {
 	return &room{
-		forward: make(chan []byte),
+		forward: make(chan *message),
 		join:    make(chan *client),
 		leave:   make(chan *client),
 		clients: make(map[*client]bool),
@@ -45,7 +47,7 @@ func (r *room) run() {
 			close(client.send)
 			r.tracer.Trace("Client left")
 		case msg := <-r.forward:
-			r.tracer.Trace("Message received: ", string(msg))
+			r.tracer.Trace("Message received: ", msg.Message)
 
 			// 모든 클라이언트들에게 메시지 전달
 			for client := range r.clients {
@@ -73,10 +75,17 @@ func (r *room) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
+	authCookie, err := req.Cookie("auth")
+	if err != nil {
+		log.Fatal("Failed to get auth cookie: ", err)
+		return
+	}
+
 	client := &client{
-		socket: socket,
-		send:   make(chan []byte, messageBufferSize),
-		room:   r,
+		socket:   socket,
+		send:     make(chan *message, messageBufferSize),
+		room:     r,
+		userData: objx.MustFromBase64(authCookie.Value),
 	}
 	r.join <- client
 
