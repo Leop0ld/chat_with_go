@@ -1,11 +1,7 @@
 package main
 
 import (
-	"crypto/md5"
 	"errors"
-	"fmt"
-	"io"
-	"strings"
 )
 
 // ErrNoAvatarURL 은 아바타 URL을 제공할 수 없을 때 발생하는 에러
@@ -37,11 +33,9 @@ type GravatarAvatar struct{}
 var UseGravatarAvatar GravatarAvatar
 
 func (GravatarAvatar) GetAvatarURL(c *client) (string, error) {
-	if email, ok := c.userData["email"]; ok {
-		if emailStr, ok := email.(string); ok {
-			m := md5.New()
-			io.WriteString(m, strings.ToLower(emailStr))
-			return fmt.Sprintf("//www.gravatar.com/avatar/%x", m.Sum(nil)), nil
+	if userID, ok := c.userData["userid"]; ok {
+		if userIdStr, ok := userID.(string); ok {
+			return "//www.gravatar.com/avatar/" + userIdStr, nil
 		}
 	}
 

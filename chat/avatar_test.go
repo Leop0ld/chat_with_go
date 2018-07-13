@@ -25,7 +25,7 @@ func TestGravatarAvatar(t *testing.T) {
 	var gravatarAvatar GravatarAvatar
 	client := new(client)
 	client.userData = map[string]interface{}{
-		"email": "l3opold7@gmail.com",
+		"userid": "8687d2397cb74f53639b135f4c122a30",
 	}
 	url, err := gravatarAvatar.GetAvatarURL(client)
 	if err != nil {
