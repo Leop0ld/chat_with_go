@@ -13,3 +13,6 @@
 
 # for autoenv
 .env
+
+# for avatar in chat app
+avatars/
