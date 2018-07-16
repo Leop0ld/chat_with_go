@@ -2,6 +2,9 @@ package main
 
 import (
 	"errors"
+	"io/ioutil"
+	"path/filepath"
+	"strings"
 )
 
 // ErrNoAvatarURL 은 아바타 URL을 제공할 수 없을 때 발생하는 에러
@@ -11,47 +14,57 @@ var ErrNoAvatarURL = errors.New("Chat: Unable to get an avatar url")
 type Avatar interface {
 	// GetAvatarURL은 지정된 클라이언트에 대한 아바타 URL을 가져옴
 	// 지정된 클라이언트의 아바타 URL을 가져오지 못할 경우, ErrNoAvatarURL이 반환됨
-	GetAvatarURL(c *client) (string, error)
+	GetAvatarURL(ChatUser) (string, error)
+}
+
+type TryAvatars []Avatar
+
+func (a TryAvatars) GetAvatarURL(u ChatUser) (string, error) {
+	for _, avatar := range a {
+		if url, err := avatar.GetAvatarURL(u); err == nil {
+			return url, err
+		}
+	}
+	return "", ErrNoAvatarURL
 }
 
 type AuthAvatar struct{}
 
 var UseAuthAvatar AuthAvatar
 
-func (AuthAvatar) GetAvatarURL(c *client) (string, error) {
-	if url, ok := c.userData["avatar_url"]; ok {
-		if urlStr, ok := url.(string); ok {
-			return urlStr, nil
-		}
+func (AuthAvatar) GetAvatarURL(u ChatUser) (string, error) {
+	url := u.AvatarURL()
+	if len(url) == 0 {
+		return "", ErrNoAvatarURL
 	}
-
-	return "", ErrNoAvatarURL
+	return u.AvatarURL(), nil
 }
 
 type GravatarAvatar struct{}
 
 var UseGravatarAvatar GravatarAvatar
 
-func (GravatarAvatar) GetAvatarURL(c *client) (string, error) {
-	if userID, ok := c.userData["userid"]; ok {
-		if userIdStr, ok := userID.(string); ok {
-			return "//www.gravatar.com/avatar/" + userIdStr, nil
-		}
-	}
-
-	return "", ErrNoAvatarURL
+func (GravatarAvatar) GetAvatarURL(u ChatUser) (string, error) {
+	return "//www.gravatar.com/avatar/" + u.UniqueID(), nil
 }
 
 type FileSystemAvatar struct{}
 
 var UseFileSystemAvatar FileSystemAvatar
 
-func (FileSystemAvatar) GetAvatarURL(c *client) (string, error) {
-	if userID, ok := c.userData["userid"]; ok {
-		if useridStr, ok := userID.(string); ok {
-			return "/avatars/" + useridStr + ".jpg", nil
+func (FileSystemAvatar) GetAvatarURL(u ChatUser) (string, error) {
+	files, err := ioutil.ReadDir("avatars")
+	if err != nil {
+		return "", ErrNoAvatarURL
+	}
+	for _, file := range files {
+		if file.IsDir() {
+			continue
+		}
+		fname := file.Name()
+		if u.UniqueID() == strings.TrimSuffix(fname, filepath.Ext(fname)) {
+			return "/avatars/" + fname, nil
 		}
 	}
-
 	return "", ErrNoAvatarURL
 }

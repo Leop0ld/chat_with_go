@@ -17,6 +17,12 @@ import (
 	"github.com/stretchr/objx"
 )
 
+var avatars Avatar = TryAvatars{
+	UseFileSystemAvatar,
+	UseAuthAvatar,
+	UseGravatarAvatar,
+}
+
 type templateHandler struct {
 	once     sync.Once
 	filename string
@@ -52,7 +58,7 @@ func main() {
 		),
 	)
 
-	r := newRoom(UseFileSystemAvatar)
+	r := newRoom()
 	r.tracer = trace.New(os.Stdout)
 
 	http.Handle("/", MustAuth(&templateHandler{filename: "chat.html"}))
